@@ -42,9 +42,9 @@ bool Connection::Reconnect()
     if (!client->isReachable())
     {
         if (!asBool(client->getSocket().Connect(ip, port)))
-		{
-			std::cerr << "Cannot reconnect" << std::endl;
-			return false;
+        {
+            std::cerr << "Cannot reconnect" << std::endl;
+            return false;
         }
         else
             onReconnect(*this);

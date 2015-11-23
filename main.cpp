@@ -10,14 +10,14 @@ int main(int argc, char** argv)
     std::string str;
     srand(time(NULL));
     int clientID = rand() % 100;
-	long port = 2115;
-	std::string ip = "127.0.0.1";
+    long port = 2115;
+    std::string ip = "127.0.0.1";
     std::cerr << "Id" << clientID << std::endl;
     SocketType type = SocketType::TCP;
-	if (argc > 2)
-	{
-		ip = argv[1];
-		port = std::strtol(argv[2], nullptr, 10);
+    if (argc > 2)
+    {
+        ip = argv[1];
+        port = std::strtol(argv[2], nullptr, 10);
     }
     if (argc > 3)
     {
@@ -47,7 +47,7 @@ int main(int argc, char** argv)
             return -1;
     }
 
-    while (1)					
+    while (1)
     {
         std::getline(std::cin, str);
         if (str == "exit")
