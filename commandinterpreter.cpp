@@ -4,8 +4,7 @@
 #include <iostream>
 #include "../spolks1/helpers.h"
 
-constexpr size_t batchSize = 140;
-
+constexpr size_t batchSize = 145;
 
 CommandInterpreter::CommandInterpreter(Connection& socket, int id):socket(socket)
 {
@@ -57,41 +56,38 @@ std::string CommandInterpreter::echo(const std::string& cmd)
     return socket.getLine();
 }
 
-std::string CommandInterpreter::transferFile(const std::string &cmd)
+std::string CommandInterpreter::transferFile(const std::string& fileName)
 {
     std::fstream file;
     size_t size;
     FileInitPackage f;
-    unsigned fullChunks;
-    unsigned endChunkSize;
+    unsigned fullChunks, lastChunkSize;
     std::chrono::time_point<std::chrono::system_clock> start, end;
     Buffer buff(maxPackageSize + sizeof(FileTransferPackage));
 
-    file.open(cmd, std::ios_base::in | std::ios_base::binary);
+    file.open(fileName, std::ios_base::in | std::ios_base::binary);
     if (!file.is_open())
         return "Error: cannot open file";
     size = getFileSize(file);
-    f = fillInitPackage(size, cmd);
+    f = fillInitPackage(size, fileName);
     f.header = fillHeader(ServerCommand::FileTransferStart, sizeof(FileInitPackage), true);
     fullChunks = size / maxPackageSize;
-    endChunkSize = size % maxPackageSize;
+    lastChunkSize = size % maxPackageSize;
     socket.Send(f);
     start = std::chrono::system_clock::now();
     for (unsigned i = 0; i < fullChunks; i++)
     {
         if (i % batchSize == 0)
-        {
             while (1)
             {
-                sendMarker();
+                sendMarker(i, batchSize);
                 if (resendMissingParts(buff, file, i, maxPackageSize, maxPackageSize))
                     break;
             }
-        }
         sendFilePart(buff, file, i, maxPackageSize, maxPackageSize);
     }
-    if (endChunkSize)
-        sendFilePart(buff, file, fullChunks, maxPackageSize, endChunkSize);
+    if (lastChunkSize)
+        sendFilePart(buff, file, fullChunks, maxPackageSize, lastChunkSize);
     end = std::chrono::system_clock::now();
     std::chrono::duration<double> time = end - start;
     return "File transfer complete, avg speed: " + std::to_string((double)size / time.count() / 1024.0 / 1024.0) + "mb/s";
@@ -112,7 +108,7 @@ bool CommandInterpreter::resendMissingParts(Buffer& buff, std::fstream& file, un
             std::cerr << "Resending chunk: " << chunkId - batchSize + i << std::endl;
             sendFilePart(buff, file, chunkId - batchSize + i, fullChunkSize, chunkSize);
         }
-    sendMarker();
+    sendMarker(chunkId, 0);
     if (socket.getData(buff, markerResponceSize) != OperationResult::Success)
         return false;
     //std::cerr << "Got marker responce 2" << std::endl;
@@ -136,13 +132,14 @@ void CommandInterpreter::sendFilePart(Buffer& buff, std::fstream& file, unsigned
     lastChunkId = chunkId;
 }
 
-void CommandInterpreter::sendMarker()
+void CommandInterpreter::sendMarker(unsigned chunkId, size_t chunksCount)
 {
     FileTransferPackage package;
 
-    package.header = fillHeader(ServerCommand::FileTransferExecute, sizeof(package), true);
+    package.header = fillHeader(ServerCommand::FileTransferExecute, sizeof(package), false);
     package.isMarker = 1;
-    package.size = batchSize;
+    package.chunkId = chunkId;
+    package.size = chunksCount;
     socket.Send(package);
 }
 

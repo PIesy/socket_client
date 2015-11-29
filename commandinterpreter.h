@@ -13,11 +13,11 @@ class CommandInterpreter
     u_int8_t clientId = 1;
     size_t getFileSize(std::fstream& file);
     FileInitPackage fillInitPackage(size_t fileSize, const std::string& fileName);
-    std::string transferFile(const std::string& cmd);
+    std::string transferFile(const std::string& fileName);
     std::string echo(const std::string& cmd);
     Command decode(const std::string& cmd);
     Header fillHeader(ServerCommand command, size_t size, bool confirm);
-    void sendMarker();
+    void sendMarker(unsigned chunkId, size_t chunksCount);
     void sendFilePart(Buffer& buff, std::fstream& file, unsigned chunkId, unsigned fullChunkSize, unsigned chunkSize);
     bool resendMissingParts(Buffer& buff, std::fstream& file, unsigned chunkId, unsigned fullChunkSize, unsigned chunkSize);
 public:

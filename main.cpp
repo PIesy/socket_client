@@ -8,11 +8,11 @@ int main(int argc, char** argv)
 {
     sockets::init();
     std::string str;
-    srand(time(NULL));
+    srand(time(nullptr));
     int clientID = rand() % 100;
     long port = 2115;
     std::string ip = "127.0.0.1";
-    std::cerr << "Id" << clientID << std::endl;
+    std::cerr << "Id: " << clientID << std::endl;
     SocketType type = SocketType::TCP;
     if (argc > 2)
     {

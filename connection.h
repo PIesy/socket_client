@@ -23,7 +23,7 @@ class Connection
     Client* client;
     Header header;
     OperationResult repeatIfFailed(std::function<OperationResult()> task);
-    std::function<void(Connection&)> onReconnect = [](Connection&) {};
+    std::function<void(Connection&)> onReconnectCallback = [](Connection&) {};
 public:
     Connection() {}
     Connection(const std::string& ip, unsigned short port, SocketType type = SocketType::TCP);

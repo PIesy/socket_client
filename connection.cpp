@@ -41,13 +41,13 @@ bool Connection::Reconnect()
 {
     if (!client->isReachable())
     {
-        if (!asBool(client->getSocket().Connect(ip, port)))
+        if (asBool(client->getSocket().Connect(ip, port)))
+            onReconnectCallback(*this);
+        else
         {
             std::cerr << "Cannot reconnect" << std::endl;
             return false;
         }
-        else
-            onReconnect(*this);
     }
     return true;
 }
@@ -59,14 +59,14 @@ bool Connection::IsConnected()
 
 void Connection::setOnReconnectCallback(const std::function<void(Connection&)>& callback)
 {
-    onReconnect = callback;
+    onReconnectCallback = callback;
 }
 
 OperationResult Connection::repeatIfFailed(std::function<OperationResult()> task)
 {
     size_t time = 0;
     size_t reconnects = 0;
-    OperationResult res = OperationResult::PartiallyFinished;
+    OperationResult result = OperationResult::PartiallyFinished;
     bool connected = true;
 
     while (reconnects < reconnectTries)
@@ -75,12 +75,12 @@ OperationResult Connection::repeatIfFailed(std::function<OperationResult()> task
         if (connected)
             while (time < timeoutWait)
             {
-                res = task();
-                while (res == OperationResult::Timeout || res == OperationResult::PartiallyFinished)
-                    res = task();
-                if (res == OperationResult::Success)
-                    return res;
-                std::cerr << "Got error retrying " << helpers::integral(res) << std::endl;
+                result = task();
+                while (result == OperationResult::Timeout || result == OperationResult::PartiallyFinished)
+                    result = task();
+                if (result == OperationResult::Success)
+                    return result;
+                std::cerr << "Got error retrying " << helpers::integral(result) << std::endl;
                 std::this_thread::sleep_for(std::chrono::seconds(1));
                 time++;
             }
@@ -89,7 +89,7 @@ OperationResult Connection::repeatIfFailed(std::function<OperationResult()> task
         std::this_thread::sleep_for(std::chrono::seconds(1));
         reconnectTries++;
     }
-    return res;
+    return result;
 }
 
 OperationResult Connection::Send(Buffer& data, size_t size)
