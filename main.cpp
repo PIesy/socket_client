@@ -13,7 +13,7 @@ int main(int argc, char** argv)
     long port = 2115;
     std::string ip = "127.0.0.1";
     std::cerr << "Id: " << clientID << std::endl;
-    SocketType type = SocketType::TCP;
+    SocketType type = SocketType::UDP;
     if (argc > 2)
     {
         ip = argv[1];
@@ -46,7 +46,15 @@ int main(int argc, char** argv)
         if (i == 100)
             return -1;
     }
-
+    if (type == SocketType::UDP)
+    {
+        Buffer buff(sizeof(RedirectResponce));
+        con.Send(id);
+        con.getData(buff, buff.getSize());
+        RedirectResponce& responce = buff;
+        con.setIp(responce.newIp);
+        con.setPort(responce.newPort);
+    }
     while (1)
     {
         std::getline(std::cin, str);

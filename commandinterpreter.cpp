@@ -4,7 +4,7 @@
 #include <iostream>
 #include "../spolks1/helpers.h"
 
-constexpr size_t batchSize = 145;
+constexpr size_t batchSize = 90;
 
 CommandInterpreter::CommandInterpreter(Connection& socket, int id):socket(socket)
 {
@@ -95,7 +95,7 @@ std::string CommandInterpreter::transferFile(const std::string& fileName)
 
 bool CommandInterpreter::resendMissingParts(Buffer& buff, std::fstream& file, unsigned chunkId, unsigned fullChunkSize, unsigned chunkSize)
 {
-    if (socket.getData(buff, markerResponceSize) != OperationResult::Success)
+    if (socket.getData(buff, markerResponceSize, true) != OperationResult::Success)
         return false;
     buff.Clear();
     if (chunkId == 0)
@@ -109,7 +109,7 @@ bool CommandInterpreter::resendMissingParts(Buffer& buff, std::fstream& file, un
             sendFilePart(buff, file, chunkId - batchSize + i, fullChunkSize, chunkSize);
         }
     sendMarker(chunkId, 0);
-    if (socket.getData(buff, markerResponceSize) != OperationResult::Success)
+    if (socket.getData(buff, markerResponceSize, true) != OperationResult::Success)
         return false;
     //std::cerr << "Got marker responce 2" << std::endl;
     buff.Clear();
@@ -152,6 +152,8 @@ FileInitPackage CommandInterpreter::fillInitPackage(size_t fileSize, const std::
     f.chunkSize = maxPackageSize;
     f.fileSize = fileSize;
     if ((pos = fileName.find_last_of('/')) != fileName.npos)
+        memcpy(f.fileName, fileName.substr(pos + 1).c_str(), fileName.substr(pos + 1).length());
+    if ((pos = fileName.find_last_of('\\')) != fileName.npos)
         memcpy(f.fileName, fileName.substr(pos + 1).c_str(), fileName.substr(pos + 1).length());
     else
         memcpy(f.fileName, fileName.c_str(), fileName.length());

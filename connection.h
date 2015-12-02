@@ -28,14 +28,15 @@ public:
     Connection() {}
     Connection(const std::string& ip, unsigned short port, SocketType type = SocketType::TCP);
     ~Connection();
-    OperationResult SendWithHeader();
     OperationResult Send(Buffer& data, size_t size);
     std::string getLine();
-    OperationResult getData(Buffer& buff, size_t size);
+    OperationResult getData(Buffer& buff, size_t size, bool noRepeat = false);
     bool IsConnected();
     void setOnReconnectCallback(const std::function<void(Connection&)>& callback);
     size_t getMaxPackageSize();
     bool Reconnect();
+    void setIp(const std::string& ip);
+    void setPort(unsigned short port);
 
     template<typename T>
     OperationResult Send(const T& data)

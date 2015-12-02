@@ -18,7 +18,7 @@ Connection::Connection(const std::string& ip, unsigned short port, SocketType ty
     else
     {
         socket.Create(SocketType::UDP);
-        socket.SetReadTimeout(5);
+        socket.SetReadTimeout(1);
         client = new UDPClient(socket, ip, port);
     }
     sockets::setSendBuffSize(socket.getSocket(), 2000000);
@@ -34,7 +34,7 @@ size_t Connection::getMaxPackageSize()
 {
     if (type == SocketType::TCP)
         return 2000000;
-    return 1400;
+    return 8500;
 }
 
 bool Connection::Reconnect()
@@ -50,6 +50,18 @@ bool Connection::Reconnect()
         }
     }
     return true;
+}
+
+void Connection::setIp(const std::string & ip)
+{
+    this->ip = ip;
+    ((UDPClient*)client)->setIp(ip);
+}
+
+void Connection::setPort(unsigned short port)
+{
+    this->port = port;
+    ((UDPClient*)client)->setPort(port);
 }
 
 bool Connection::IsConnected()
@@ -97,8 +109,14 @@ OperationResult Connection::Send(Buffer& data, size_t size)
     return repeatIfFailed([&]() { return client->Send(size, data); });
 }
 
-OperationResult Connection::getData(Buffer& buff, size_t size)
+OperationResult Connection::getData(Buffer& buff, size_t size, bool noRepeat)
 {
+    if (noRepeat)
+    {
+        OperationResult r = client->Recieve(size, buff);
+        client->endTransfer();
+        return r;
+    }
     return repeatIfFailed([&]() { return client->Recieve(size, buff); });
 }
 
