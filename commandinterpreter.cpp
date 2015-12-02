@@ -4,7 +4,7 @@
 #include <iostream>
 #include "../spolks1/helpers.h"
 
-constexpr size_t batchSize = 90;
+constexpr size_t batchSize = 145;
 
 CommandInterpreter::CommandInterpreter(Connection& socket, int id):socket(socket)
 {
@@ -95,23 +95,23 @@ std::string CommandInterpreter::transferFile(const std::string& fileName)
 
 bool CommandInterpreter::resendMissingParts(Buffer& buff, std::fstream& file, unsigned chunkId, unsigned fullChunkSize, unsigned chunkSize)
 {
+    bool err = false;
     if (socket.getData(buff, markerResponceSize, true) != OperationResult::Success)
         return false;
     buff.Clear();
     if (chunkId == 0)
         return true;
-    //std::cerr << "Got marker responce" << std::endl;
     MarkerResponce state = buff;
     for (size_t i = 0; i < batchSize; i++)
         if (!state.bits[i])
         {
-            std::cerr << "Resending chunk: " << chunkId - batchSize + i << std::endl;
-            sendFilePart(buff, file, chunkId - batchSize + i, fullChunkSize, chunkSize);
+            err = true;
+            std::cerr << "Resending chunk: " << state.chunkId + i << std::endl;
+            sendFilePart(buff, file, state.chunkId + i, fullChunkSize, chunkSize);
         }
+    if (err)
+        std::cerr << "Marker responce: " << state.bits.to_string() << std::endl;
     sendMarker(chunkId, 0);
-    if (socket.getData(buff, markerResponceSize, true) != OperationResult::Success)
-        return false;
-    //std::cerr << "Got marker responce 2" << std::endl;
     buff.Clear();
     return true;
 }
@@ -120,7 +120,7 @@ void CommandInterpreter::sendFilePart(Buffer& buff, std::fstream& file, unsigned
 {
     static unsigned lastChunkId = 0;
     FileTransferPackage p;
-    p.header = fillHeader(ServerCommand::FileTransferExecute, chunkSize + sizeof(p), false);
+    p.header = fillHeader(ServerCommand::FileTransferExecute, chunkSize + sizeof(p), true);
     p.size = chunkSize;
     p.chunkId = chunkId;
     buff.Write(p);

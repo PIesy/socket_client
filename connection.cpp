@@ -18,7 +18,7 @@ Connection::Connection(const std::string& ip, unsigned short port, SocketType ty
     else
     {
         socket.Create(SocketType::UDP);
-        socket.SetReadTimeout(1);
+        socket.SetReadTimeout(5);
         client = new UDPClient(socket, ip, port);
     }
     sockets::setSendBuffSize(socket.getSocket(), 2000000);
@@ -34,7 +34,7 @@ size_t Connection::getMaxPackageSize()
 {
     if (type == SocketType::TCP)
         return 2000000;
-    return 8500;
+    return 1400;
 }
 
 bool Connection::Reconnect()
